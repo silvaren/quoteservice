@@ -1,10 +1,16 @@
+import sbt.Keys._
+
 organization  := "com.example"
 
 version       := "0.1"
 
-scalaVersion  := "2.11.6"
+scalaVersion  := "2.11.0"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+
+crossPaths := false
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
@@ -15,7 +21,8 @@ libraryDependencies ++= {
     "io.spray"            %%  "spray-testkit" % sprayV  % "test",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
-    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test"
+    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
+    "io.github.silvaren" % "quotepersistence" % "1.0"
   )
 }
 
