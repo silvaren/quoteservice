@@ -1,11 +1,11 @@
-package com.example
+package io.github.silvaren.quoteservice
 
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
-import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
 import io.github.silvaren.quotepersistence.ParametersLoader
+import spray.can.Http
 
 import scala.concurrent.duration._
 

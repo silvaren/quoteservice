@@ -1,13 +1,13 @@
-package com.example
+package io.github.silvaren.quoteservice
 
 import akka.actor.Actor
-import spray.routing._
-import spray.http.MediaTypes._
 import io.github.silvaren.quotepersistence.{QuotePersistence, Serialization}
 import org.joda.time.{DateTime, DateTimeZone}
+import spray.http.MediaTypes._
+import spray.routing._
 
-import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
