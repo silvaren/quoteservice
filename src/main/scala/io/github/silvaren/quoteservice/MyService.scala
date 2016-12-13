@@ -53,7 +53,7 @@ trait MyService extends HttpService {
       .withMillisOfSecond(0)
     val quotesPromise = QuotePersistence.retrieveQuotes("PETR4", initialDate, db)
     onComplete(quotesPromise.future){
-      case Success(quotes) => {println(Serialization.gson.toJson(quotes));complete(Serialization.gson.toJson(quotes))}
+      case Success(quotes) => complete(Serialization.gson.toJson(quotes.toArray))
       case Failure(t) => complete(t.getMessage)
     }
   }
