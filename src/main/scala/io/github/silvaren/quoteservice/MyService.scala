@@ -1,6 +1,7 @@
 package io.github.silvaren.quoteservice
 
 import akka.actor.Actor
+import io.github.silvaren.quotepersistence.QuotePersistence.QuoteDb
 import io.github.silvaren.quotepersistence.{QuotePersistence, Serialization}
 import org.joda.time.{DateTime, DateTimeZone}
 import spray.http.MediaTypes._
@@ -21,30 +22,54 @@ class MyServiceActor extends Actor with MyService {
   // other things here, like request stream processing
   // or timeout handling
   def receive = runRoute(myRoute)
+
+  override def preStart(): Unit = {
+    super.preStart()
+    println("Connecting to mongo quotedb...")
+    quoteDb = Some(QuotePersistence.connectToQuoteDb(Boot.parameters.dbConfig))
+  }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    println("Disonnecting from mongo quotedb...")
+    quoteDb.foreach(QuotePersistence.disconnectFromQuoteDb(_))
+  }
 }
 
 
 // this trait defines our service behavior independently from the service actor
 trait MyService extends HttpService {
 
+  var quoteDb: Option[QuoteDb] = None
+
+  def retrieveQuotes(db: QuoteDb) = {
+    val initialDate = new DateTime().withZone(DateTimeZone.forID("America/Sao_Paulo"))
+      .withYear(2015)
+      .withMonthOfYear(11)
+      .withDayOfMonth(1)
+      .withHourOfDay(0)
+      .withMinuteOfHour(0)
+      .withSecondOfMinute(0)
+      .withMillisOfSecond(0)
+    val quotesPromise = QuotePersistence.retrieveQuotes("PETR4", initialDate, db)
+    onComplete(quotesPromise.future){
+      case Success(quotes) => {println(Serialization.gson.toJson(quotes));complete(Serialization.gson.toJson(quotes))}
+      case Failure(t) => complete(t.getMessage)
+    }
+  }
+
   val myRoute =
     path("") {
-      get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
-        val initialDate = new DateTime().withZone(DateTimeZone.forID("America/Sao_Paulo"))
-          .withYear(2015)
-          .withMonthOfYear(11)
-          .withDayOfMonth(1)
-          .withHourOfDay(0)
-          .withMinuteOfHour(0)
-          .withSecondOfMinute(0)
-          .withMillisOfSecond(0)
+      dynamic {
+        get {
+          respondWithMediaType(`text/html`) {
+            // XML is marshalled to `text/xml` by default, so we simply override here
 
-          val quoteDb = QuotePersistence.connectToQuoteDb(Boot.parameters.dbConfig)
-          val quotesPromise = QuotePersistence.retrieveQuotes("PETR4", initialDate, quoteDb)
-          onComplete(quotesPromise.future){
-            case Success(quotes) => {println(Serialization.gson.toJson(quotes));complete(Serialization.gson.toJson(quotes))}
-            case Failure(t) => complete(t.getMessage)
+            quoteDb match {
+              case Some(db) => retrieveQuotes(db)
+              case None => complete("Not connected to quotedb!")
+            }
+
           }
         }
       }
