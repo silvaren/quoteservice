@@ -7,7 +7,9 @@ import org.joda.time.{DateTime, DateTimeZone}
 import spray.http.MediaTypes._
 import spray.routing._
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 // we don't implement our route structure directly in the service actor because
@@ -26,7 +28,9 @@ class MyServiceActor extends Actor with MyService {
   override def preStart(): Unit = {
     super.preStart()
     println("Connecting to mongo quotedb...")
-    quoteDb = Some(QuotePersistence.connectToQuoteDb(Boot.parameters.dbConfig))
+    val quoteDbF = QuotePersistence.connectToQuoteDb(Boot.parameters.dbConfig)
+    quoteDbF.foreach(q => quoteDb = Some(q))
+    Await.result(quoteDbF, Duration.Inf)
   }
 
   override def postStop(): Unit = {
@@ -52,7 +56,7 @@ trait MyService extends HttpService {
       .withSecondOfMinute(0)
       .withMillisOfSecond(0)
     val quotesPromise = QuotePersistence.retrieveQuotes("PETR4", initialDate, db)
-    onComplete(quotesPromise.future){
+    onComplete(quotesPromise){
       case Success(quotes) => complete(Serialization.gson.toJson(quotes.toArray))
       case Failure(t) => complete(t.getMessage)
     }
